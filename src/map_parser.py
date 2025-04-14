@@ -1,5 +1,4 @@
 import re
-import time
 
 import requests
 from bs4 import BeautifulSoup
@@ -44,7 +43,7 @@ def extract_bus_info(text: str, bus_number: str) -> dict | None:
     или None, если данные не найдены.
     """
     # Шаблон, который ищет последовательность: [номер маршрута]до, затем название и времена
-    pattern = rf"{bus_number}\s*([^0-9]+?)((?:\s*\d+\s*мин)+)"
+    pattern = rf"{bus_number}\s*([^0-9]+?)((?:\s*\d+\s*мин)+|завтра)"
     match = re.search(pattern, text)
     if not match:
         return None
@@ -57,7 +56,9 @@ def extract_bus_info(text: str, bus_number: str) -> dict | None:
 
 
 def get_bus_arrival_info(
-    bus_number: str, url: str, max_retries: int = 20, delay: float = 1.0
+    bus_number: str,
+    url: str,
+    max_retries: int = 20,
 ) -> str:
     """
     Получает информацию о прибытии автобуса с указанным номером.
@@ -77,8 +78,7 @@ def get_bus_arrival_info(
 
         arrival_text = parse_arrival_block(html_content)
         if not arrival_text:
-            print(f"[Попытка {attempt}] Нет блока прибытия, жду {delay} секунд...")
-            time.sleep(delay)
+            print(f"[Попытка {attempt}]")
             continue
 
         bus_info = extract_bus_info(arrival_text, bus_number)
@@ -86,7 +86,6 @@ def get_bus_arrival_info(
             arrival_times = ", ".join(bus_info["arrival_times"])
             return f"Маршрут: {bus_info['bus_number']}\nВремя прибытия: {arrival_times}"
         else:
-            print(f"[Попытка {attempt}] Нет данных по маршруту {bus_number}, жду {delay} секунд...")
-            time.sleep(delay)
+            print(f"[Попытка {attempt}] Нет данных по маршруту {bus_number}")
 
-    return f"Не удалось получить информацию по маршруту {bus_number} после {max_retries} попыток."
+    return f"Не удалось получить информацию по маршруту {bus_number}"
